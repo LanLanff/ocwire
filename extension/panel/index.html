@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<style>
+  :root {
+    --ok: var(--oc-success, #2ea043);
+    --warn: var(--oc-warning, #d29922);
+    --err: var(--oc-error, #f85149);
+    --info: var(--oc-info, #58a6ff);
+    --fg: var(--oc-fg, #e6edf3);
+    --muted: var(--oc-muted, #8b949e);
+    --border: var(--oc-border, rgba(127, 127, 127, .28));
+    --elev: var(--oc-elevated, rgba(127, 127, 127, .10));
+    --hover: var(--oc-hover, rgba(127, 127, 127, .14));
+    --primary: var(--oc-primary, #3b82f6);
+    --radius: var(--oc-radius, 8px);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    color: inherit; background: transparent;
+  }
+  #root { height: 100%; padding: 12px; box-sizing: border-box; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+
+  /* 顶栏 */
+  .hd { display: flex; align-items: center; gap: 8px; }
+  .hd .title { font-weight: 700; font-size: 14px; letter-spacing: .2px; }
+  .hd .summary { color: var(--muted); font-size: 12px; margin-left: 2px; }
+  .hd .ver { color: var(--muted); font-size: 10px; opacity: .65; }
+  .hd .spacer { flex: 1; }
+  .icon-btn {
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    width: 26px; height: 26px; border-radius: 7px; cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .icon-btn:hover { background: var(--hover); color: var(--fg); }
+
+  /* 我的名称 */
+  .me { display: flex; align-items: center; gap: 8px; }
+  .me-label { color: var(--muted); font-size: 12px; flex: none; }
+  .me input { flex: 1; width: auto; padding: 5px 9px; font-size: 12.5px; }
+  .me .mini { flex: none; }
+
+  /* 分页 */
+  .tabs2 { display: flex; gap: 5px; background: var(--elev); border: 1px solid var(--border); padding: 3px; border-radius: 9px; }
+  .t2 { border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 7px; cursor: pointer; font-size: 12.5px; }
+  .t2.active { background: var(--oc-bg, rgba(127,127,127,.18)); color: var(--fg); font-weight: 600; }
+  .view { display: flex; flex-direction: column; gap: 10px; }
+  .card-add { border: 1px solid var(--border); border-radius: var(--radius); background: var(--elev); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  #view-log #loglist { border: 1px solid var(--border); border-radius: var(--radius); background: var(--elev); padding: 10px; max-height: none; }
+
+  /* 提示条 */
+  .banner {
+    border: 1px solid var(--border); border-left: 3px solid var(--warn);
+    background: var(--elev); border-radius: var(--radius); padding: 8px 10px;
+    font-size: 12px; color: var(--fg); line-height: 1.55;
+  }
+  .banner.err { border-left-color: var(--err); }
+
+  /* 按钮 */
+  .btn {
+    border: 1px solid var(--border); background: var(--elev); color: var(--fg);
+    border-radius: 7px; padding: 7px 10px; cursor: pointer; font-size: 12.5px;
+  }
+  .btn:hover { background: var(--hover); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.primary { background: var(--primary); border-color: transparent; color: #fff; font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* 设备卡 */
+  .devices { display: flex; flex-direction: column; gap: 8px; }
+  .empty {
+    border: 1px dashed var(--border); border-radius: var(--radius);
+    padding: 18px 10px; text-align: center; color: var(--muted); font-size: 12px;
+  }
+  .dev {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--elev); padding: 10px;
+  }
+  .dev .dot {
+    width: 9px; height: 9px; border-radius: 50%; flex: none;
+    background: var(--muted); opacity: .6;
+  }
+  .dev[data-state="online"] .dot { background: var(--ok); opacity: 1; box-shadow: 0 0 8px var(--ok); }
+  .dev[data-state="connecting"] .dot, .dev[data-state="reconnecting"] .dot { background: var(--warn); opacity: 1; animation: pulse 1.2s infinite; }
+  .dev[data-state="waiting"] .dot { background: var(--info); opacity: 1; }
+  .dev[data-state="error"] .dot { background: var(--err); opacity: 1; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  .dev .info { flex: 1; min-width: 0; }
+  .dev .name-row { display: flex; align-items: center; gap: 6px; }
+  .dev .name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dev .tag {
+    font-size: 10.5px; color: var(--info); border: 1px solid color-mix(in srgb, var(--info) 45%, transparent);
+    border-radius: 999px; padding: 0 6px; line-height: 16px; flex: none;
+  }
+  .dev .meta { color: var(--muted); font-size: 11.5px; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dev .meta .st-ok { color: var(--ok); }
+  .dev .meta .st-warn { color: var(--warn); }
+  .dev .meta .st-err { color: var(--err); }
+  .dev .ops { display: flex; align-items: center; gap: 5px; flex: none; }
+  .mini {
+    border: 1px solid var(--border); background: transparent; color: var(--fg);
+    border-radius: 6px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; white-space: nowrap;
+  }
+  .mini:hover { background: var(--hover); }
+  .mini.icon { width: 24px; padding: 0; height: 24px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); }
+  .mini.icon.on { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+  .mini.icon.danger:hover { color: var(--err); border-color: color-mix(in srgb, var(--err) 45%, transparent); }
+
+  /* 折叠区 */
+  details {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--elev); overflow: hidden;
+  }
+  summary {
+    cursor: pointer; padding: 8px 10px; font-size: 12.5px; user-select: none;
+    display: flex; align-items: center; gap: 6px; list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary .chev { color: var(--muted); transition: transform .15s; font-size: 10px; }
+  details[open] summary .chev { transform: rotate(90deg); }
+  .body { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 8px; }
+  input, textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 7px;
+    background: transparent; color: var(--fg); padding: 7px 9px; font: inherit; font-size: 12.5px; outline: none;
+  }
+  input:focus, textarea:focus { border-color: color-mix(in srgb, var(--primary) 60%, var(--border)); }
+  textarea { resize: vertical; min-height: 54px; }
+  .hint { color: var(--muted); font-size: 11px; line-height: 1.5; }
+  select {
+    border: 1px solid var(--border); border-radius: 7px; background: var(--elev);
+    color: var(--fg); padding: 5px 7px; font: inherit; font-size: 11.5px;
+  }
+  .hidden { display: none !important; }
+
+  /* 添加设备 */
+  .steps {
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    background: var(--elev); border: 1px solid var(--border); border-radius: 7px;
+    padding: 6px 9px; color: var(--muted); font-size: 11px;
+  }
+  .steps b {
+    display: inline-flex; width: 15px; height: 15px; border-radius: 50%;
+    background: var(--oc-bg, rgba(127,127,127,.2)); color: var(--fg);
+    align-items: center; justify-content: center; font-size: 10px; margin-right: 2px;
+  }
+  .steps .arr { color: var(--border); }
+  .code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 11.5px; line-height: 1.5; min-height: 74px; }
+  .code.valid { border-color: color-mix(in srgb, var(--ok) 55%, var(--border)); }
+  .code.invalid { border-color: color-mix(in srgb, var(--err) 55%, var(--border)); }
+  .status { min-height: 18px; font-size: 11px; word-break: break-all; }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+
+  /* 日志工具条 */
+  .logtools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .logtools .spacer { flex: 1; }
+  .logtools .count { color: var(--muted); font-size: 11px; flex: none; }
+  #loglist .day { color: var(--muted); font-size: 10.5px; font-weight: 600; letter-spacing: .4px; padding: 8px 0 2px; }
+  #loglist .ev:first-child .day { padding-top: 0; }
+
+  /* 日志 */
+  #loglist { max-height: 190px; overflow: auto; font-size: 11.5px; padding: 0 10px 10px; }
+  .ev { display: flex; gap: 7px; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+  .ev:last-child { border-bottom: 0; }
+  .ev .t { color: var(--muted); flex: none; font-variant-numeric: tabular-nums; }
+  .ev .k { flex: none; width: 44px; }
+  .ev .k.k-ok { color: var(--ok); }
+  .ev .k.k-warn { color: var(--warn); }
+  .ev .k.k-err { color: var(--err); }
+  .ev .k.k-info { color: var(--info); }
+  .ev .m { flex: 1; min-width: 0; word-break: break-all; user-select: text; }
+
+  .loading { color: var(--muted); font-size: 12px; padding: 10px 0; text-align: center; }
+</style>
+</head>
+<body>
+  <div id="root">
+    <div class="hd">
+      <span class="title">oc-link</span>
+      <span class="ver">v1.3.1</span>
+      <span class="summary" id="summary">连接中…</span>
+      <span class="spacer"></span>
+      <button class="icon-btn" id="btn-refresh" title="刷新">⟳</button>
+    </div>
+
+    <div class="tabs2">
+      <button class="t2 active" data-v="dev">设备</button>
+      <button class="t2" data-v="add">添加设备</button>
+      <button class="t2" data-v="log">日志</button>
+    </div>
+
+    <div class="view" id="view-dev">
+    <div class="me">
+      <span class="me-label">我的名称</span>
+      <input id="myName" placeholder="控制端名字（B 端看到）" maxlength="24" />
+      <button class="mini" id="btn-save-name">保存</button>
+    </div>
+
+    <div class="banner" id="banner" style="display:none"></div>
+
+    <div class="row2">
+      <button class="btn primary" id="btn-connect-all">全部连接</button>
+      <button class="btn" id="btn-disconnect-all">全部断开</button>
+    </div>
+
+    <div class="devices" id="devices">
+      <div class="loading">正在读取连接管理器…</div>
+    </div>
+    </div>
+
+    <div class="view hidden" id="view-add">
+      <div class="card-add">
+        <div class="steps">
+          <span><b>1</b> 被控端「生成邀请码」</span><span class="arr">→</span>
+          <span><b>2</b> 复制</span><span class="arr">→</span>
+          <span><b>3</b> 粘贴到这里</span>
+        </div>
+        <textarea id="code" class="code" placeholder="OCL2:…（粘贴后自动识别）" spellcheck="false"></textarea>
+        <div class="status" id="add-status"></div>
+        <div class="row2">
+          <button class="btn primary" id="btn-add" disabled>添加设备</button>
+          <button class="btn" id="btn-paste">从剪贴板粘贴</button>
+        </div>
+        <div class="hint">邀请码里含密钥，只在本机粘贴；一码一机，删掉可重发。</div>
+      </div>
+    </div>
+
+    <div class="view hidden" id="view-log">
+      <div class="logtools">
+        <select id="log-dev"><option value="">全部设备</option></select>
+        <select id="log-kind">
+          <option value="">全部类型</option>
+          <option value="cmd">命令</option>
+          <option value="peer">控制端</option>
+          <option value="relay">连接</option>
+          <option value="other">其他</option>
+        </select>
+        <span class="spacer"></span>
+        <span class="count" id="log-count"></span>
+      </div>
+      <div id="loglist"><div class="loading">暂无记录</div></div>
+      <div style="text-align:center"><button class="btn" id="btn-more-log" style="display:none">显示更早</button></div>
+    </div>
+  </div>
+  <script src="main.js?v=132"></script>
+</body>
+</html>

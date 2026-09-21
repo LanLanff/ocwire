@@ -1,0 +1,32 @@
+# 构建产物
+bin/
+dist/
+build/
+*.exe
+*.staged
+*.old
+*.tgz
+*.zip
+
+# Go / Node 依赖
+node_modules/
+extension/node_modules/
+npm/*/node_modules/
+
+# 本地数据与密钥（绝不入库）
+data/
+configs/
+deploy/release-40/
+deploy/README-安全说明.txt
+**/keys.json
+**/agent.json
+**/desktop.json
+**/manager.json
+**/activity.jsonl
+**/audit.jsonl
+
+# 本地测试/临时
+*.log
+*.tmp
+.openchamber/
+releases/

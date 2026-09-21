@@ -1,0 +1,12 @@
+{
+  "name": "oc-link-plugin",
+  "version": "0.3.0",
+  "description": "oc-link: AI \u9a71\u52a8\u7684\u52a0\u5bc6\u8fdc\u7a0b\u63a7\u5236\uff08opencode \u63d2\u4ef6\uff09\u3002\u8d26\u53f7\u767b\u5f55\u3001\u8bbe\u5907\u540c\u6b65\u3001\u7aef\u5230\u7aef\u52a0\u5bc6\u3002",
+  "type": "module",
+  "main": "index.js",
+  "exports": { ".": "./index.js" },
+  "files": ["index.js", "README.md"],
+  "license": "MIT",
+  "peerDependencies": { "@opencode-ai/plugin": ">=1.1.0" },
+  "keywords": ["opencode", "plugin", "remote", "e2ee"]
+}

@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "default": {
+      "hub": "124.93.28.120:21122",
+      "key": "OCL-在此粘贴网页生成的配对密钥",
+      "fingerprint": "把 hub 启动时打印的 TLS 指纹填这里"
+    },
+    "office": {
+      "hub": "124.93.28.120:21122",
+      "key": "OCL-另一台设备的密钥",
+      "fingerprint": "同一个 hub 的 TLS 指纹"
+    }
+  },
+  "insecure": false
+}

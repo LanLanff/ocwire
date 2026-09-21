@@ -1,0 +1,36 @@
+{
+  "name": "oc-link-panel",
+  "version": "1.3.1",
+  "private": true,
+  "type": "module",
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": { "openchamber": ">=1.24.0" },
+    "contributes": {
+      "panel": { "id": "oclink-panel", "name": "oc-link", "icon": "server-line", "entry": "panel/index.html" },
+      "capabilities": ["prompt"],
+      "service": { "entry": "service/main.js", "runtime": "host" },
+      "tools": [
+        { "match": "oc_add", "name": "oc-link \u6dfb\u52a0", "icon": "add-circle-line", "title": "\u6dfb\u52a0\u76ee\u6807\u8bbe\u5907" },
+        { "match": "oc_devices", "name": "oc-link \u8bbe\u5907", "icon": "server-line", "title": "\u67e5\u770b\u8bbe\u5907\u4e0e\u8fde\u63a5\u72b6\u6001" },
+        { "match": "oc_connect", "name": "oc-link \u8fde\u63a5", "icon": "link", "title": "\u8fde\u63a5\u300c{input.target}\u300d" },
+        { "match": "oc_disconnect", "name": "oc-link \u65ad\u5f00", "icon": "link-unlink", "title": "\u65ad\u5f00\u300c{input.target}\u300d" },
+        { "match": "oc_status", "name": "oc-link \u72b6\u6001", "icon": "pulse-line", "title": "\u76ee\u6807\u300c{input.target}\u300d" },
+        { "match": "oc_exec", "name": "oc-link \u6267\u884c", "icon": "terminal-box-line", "title": "{input.target} \u00b7 {input.cmd}" },
+        { "match": "oc_read", "name": "oc-link \u8bfb\u53d6", "icon": "file-text-line", "title": "{input.target} \u00b7 {input.path}" },
+        { "match": "oc_write", "name": "oc-link \u5199\u5165", "icon": "save-line", "title": "{input.target} \u00b7 {input.path}" },
+        { "match": "oc_edit", "name": "oc-link \u7f16\u8f91", "icon": "edit-line", "title": "{input.target} \u00b7 {input.path}" },
+        { "match": "oc_grep", "name": "oc-link \u641c\u7d22", "icon": "search-line", "title": "{input.target} \u00b7 {input.pattern}" },
+        { "match": "oc_glob", "name": "oc-link \u67e5\u627e", "icon": "folder-line", "title": "{input.target} \u00b7 {input.pattern}" },
+        { "match": "oc_list", "name": "oc-link \u76ee\u5f55", "icon": "list-unordered", "title": "{input.target} \u00b7 {input.path}" },
+        { "match": "oc_*", "name": "oc-link", "icon": "server-line" }
+      ]
+    }
+  },
+  "dependencies": {
+    "@openchamber/sdk": "^1.24.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
