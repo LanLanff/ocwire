@@ -1,5 +1,9 @@
 # ocwire
 
+[![CI](https://github.com/LanLanff/ocwire/actions/workflows/ci.yml/badge.svg)](https://github.com/LanLanff/ocwire/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/LanLanff/ocwire)](https://github.com/LanLanff/ocwire/releases/latest)
+
 **Chat-native remote control for [opencode](https://opencode.ai) / OpenChamber — through a blind relay with end-to-end encryption.**
 
 Control your other computers by talking to your AI agent: run commands, read/write files, grep, transfer — all from the opencode chat. No open ports, no VPN, no SSH. The relay never sees plaintext and never holds a key.
