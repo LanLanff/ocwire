@@ -26,6 +26,18 @@ Control your other computers by talking to your AI agent: run commands, read/wri
 - **Signed auto-update** — agents verify an Ed25519-signed release manifest before upgrading.
 - **Desktop (Wails), CLI agent, OpenChamber panel** — the same engine, three faces. Windows / Linux / macOS builds.
 
+## Screenshots
+
+Admin console (relay) — devices, per-controller control, offline cleanup:
+
+![relay devices](assets/console-devices.png)
+
+Every controller credential, live state and revocation:
+
+![relay controllers](assets/console-clients.png)
+
+> Screenshots use demo data. More (desktop client, OpenChamber panel) coming.
+
 ## Quick start
 
 ### 1. Relay (a small VPS, or your LAN)
@@ -78,6 +90,14 @@ extension/       OpenChamber panel (devices / add / log)  → A side UI
 desktop/         Wails GUI client (B full features, A page)
 docs/            architecture notes
 ```
+
+## Acknowledgements
+
+- [opencode](https://github.com/sst/opencode) by SST — the agent runtime this project plugs into. The A-side engine is loaded as an opencode plugin; the code here is independent, no source is vendored from opencode.
+- [OpenChamber](https://github.com/openchamber/openchamber) — the shell/UI that hosts the opencode runtime and the extension panel. The panel uses the published `@openchamber/sdk`.
+- Runtime dependencies: `@opencode-ai/plugin` and `@openchamber/sdk` (both MIT).
+
+**ocwire is an independent community project.** It is not affiliated with, endorsed by, or sponsored by the opencode or OpenChamber projects. All trademarks belong to their respective owners.
 
 ## Status
 
