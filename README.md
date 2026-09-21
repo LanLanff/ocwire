@@ -4,6 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/LanLanff/ocwire)](https://github.com/LanLanff/ocwire/releases/latest)
 
+**English** | [简体中文](README.zh-CN.md)
+
 **Chat-native remote control for [opencode](https://opencode.ai) / OpenChamber — through a blind relay with end-to-end encryption.**
 
 Control your other computers by talking to your AI agent: run commands, read/write files, grep, transfer — all from the opencode chat. No open ports, no VPN, no SSH. The relay never sees plaintext and never holds a key.
@@ -119,16 +121,3 @@ node --check plugin/client.mjs        # plugin syntax check
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
----
-
-# 中文说明
-
-**用聊天控制你的其他电脑**：A 端引擎是 opencode/OpenChamber 插件，在聊天里直接执行命令、读写文件；中间是一台**全盲中继**（拿不到密钥、看不到内容）；B 端是桌面客户端或命令行 agent。**不开端口、不用 VPN、不用 SSH。**
-
-- 首次使用：B 端启动自动登记 → 点「生成邀请码」→ A 端在聊天里粘贴添加
-- 之后直接说：「连接 XX」「在 XX 上执行 df -h」「读一下 XX 的某个文件」
-- 每台控制端一把独立钥匙：可单独禁用/踢下线/删除；管理台有审计（保留 3 天）、离线设备清理
-- 端到端加密 + 指纹钉死；中继只有哈希 ID 和校验子键，永远解不开、也伪造不了
-
-安装与使用见上方 Quick start；安全模型见 [SECURITY.md](SECURITY.md)。
