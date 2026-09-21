@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>oc-link 客户端</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="logo">ol</span><span>oc-link</span></div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="b">被控端</button>
+      <button class="tab" data-tab="a">控制端</button>
+      <button class="tab" data-tab="add">添加设备</button>
+      <button class="tab" data-tab="log">日志</button>
+      <button class="tab" data-tab="set">设置</button>
+    </nav>
+    <div class="status-pill" id="topStatus"><span class="dot"></span><span id="topStatusText">未激活</span></div>
+  </header>
+
+  <main>
+    <!-- 被控端 -->
+    <section class="page active" id="page-b">
+      <div class="grid">
+        <div class="banner hidden" id="disabledBanner">⛔ 本机已被中继管理员禁用：控制端无法连接，本机保持在线；管理员在管理台点「启用」后自动恢复。</div>
+        <div class="card hero">
+          <div class="hero-left">
+            <div class="big-dot" id="bigDot"></div>
+            <div>
+              <div class="hero-name">
+                <span id="devName">-</span>
+                <button class="ghost sm" id="btnRename">改名</button>
+              </div>
+              <div class="meta" id="devMeta">尚未激活</div>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <button class="primary" id="btnToggle">启动</button>
+          </div>
+        </div>
+
+        <div class="card stats">
+          <div class="stat"><b id="statPeer">无</b><span>当前控制端</span></div>
+          <div class="stat"><b id="statPeers">0</b><span>连接过的设备</span></div>
+          <div class="stat"><b id="statReq">0</b><span>累计请求</span></div>
+        </div>
+
+        <div class="card" id="cardClients">
+          <div class="log-head">
+            <h3>已授权的控制端 <span class="muted sm">一码一机 · 可单独删除</span></h3>
+            <button class="primary sm" id="btnCreateInvite">＋ 生成邀请码</button>
+          </div>
+          <div id="clientList" class="peers"></div>
+        </div>
+
+        <div class="card" id="cardLink">
+          <h3>邀请码</h3>
+          <p class="hint">点「生成邀请码」新建一个控制端，或点某个控制端的「邀请码」重新显示；把邀请码发给 A 端输入。</p>
+          <div class="row">
+            <button id="btnShowLink" disabled>显示二维码</button>
+            <button class="ghost" id="btnCopyLink" disabled>复制邀请码</button>
+          </div>
+          <div id="qrBox" class="hidden">
+            <img id="qrImg" alt="邀请码二维码">
+            <textarea id="linkText" readonly rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 控制端 -->
+    <section class="page" id="page-a">
+      <div class="grid">
+        <div class="card wide">
+          <div class="log-head">
+            <h3>我的名称 <span class="muted sm">连接被控端时显示，让 B 端知道「谁连的」</span></h3>
+          </div>
+          <div class="row">
+            <input id="clientName" placeholder="例如：阿房（默认取本机计算机名）" maxlength="24">
+            <button id="btnSaveClientName">保存</button>
+          </div>
+        </div>
+
+        <div class="card wide">
+          <div class="log-head">
+            <h3>目标列表</h3>
+            <div class="row" id="aSummary">
+              <span class="chip">设备 <b id="aTotal">0</b></span>
+            </div>
+          </div>
+          <div id="profileList" class="profiles"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 添加设备 -->
+    <section class="page" id="page-add">
+      <div class="grid">
+        <div class="card wide addcard">
+          <div class="addhead">
+            <div class="addicon">＋</div>
+            <div>
+              <h3>添加被控端</h3>
+              <p class="muted sm">粘贴邀请码即可控制那台设备</p>
+            </div>
+          </div>
+          <div class="steps">
+            <span><b>1</b> 被控端点「生成邀请码」</span>
+            <span class="arrow">→</span>
+            <span><b>2</b> 复制邀请码</span>
+            <span class="arrow">→</span>
+            <span><b>3</b> 粘贴到这里</span>
+          </div>
+          <textarea id="codeInput" class="code-input" rows="4" spellcheck="false" placeholder="OCL2:…（粘贴后自动识别设备）"></textarea>
+          <div class="addstatus" id="addStatus"></div>
+          <div class="row">
+            <button class="primary" id="btnAddProfile" disabled>添加设备</button>
+            <button class="ghost" id="btnPasteCode">从剪贴板粘贴</button>
+            <button class="ghost hidden" id="btnGoConnect">去连接</button>
+          </div>
+          <p class="hint">邀请码里含密钥，只在本机粘贴；一码一机，失效了可在「被控端」页删掉重发。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 日志 -->
+    <section class="page" id="page-log">
+      <div class="grid">
+        <div class="card wide">
+          <div class="log-head">
+            <h3>活动日志 <span class="muted sm" id="logCount"></span></h3>
+            <div class="row">
+              <select id="logFilter"><option value="">全部设备</option></select>
+              <select id="logKind">
+                <option value="">全部类型</option>
+                <option value="cmd">命令</option>
+                <option value="peer">控制端</option>
+                <option value="relay">中继</option>
+                <option value="other">其他</option>
+              </select>
+              <button class="ghost sm" id="btnClearLog">清空记录</button>
+            </div>
+          </div>
+          <div id="logList" class="log"></div>
+          <div class="row center" style="margin-top:10px">
+            <button class="ghost sm" id="btnMoreLog">加载更多</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="page" id="page-set">
+      <div class="grid">
+        <div class="card">
+          <h3>设备名</h3>
+          <div class="row">
+            <input id="inputName" maxlength="24" placeholder="设备名">
+            <button id="btnSaveName">保存</button>
+          </div>
+          <p class="hint">控制端会看到这个名字；中继只存这个名字和公钥哈希。</p>
+        </div>
+
+        <div class="card">
+          <h3>开机自启</h3>
+          <label class="switch">
+            <input type="checkbox" id="autoStart">
+            <span class="slider"></span>
+            <span class="switch-label">开机后自动运行并接入中继</span>
+          </label>
+        </div>
+
+        <div class="card" id="cardActivate">
+          <h3>设备与中继</h3>
+          <div class="kv"><span>状态</span><b id="relayStatus">-</b></div>
+          <div class="kv"><span>设备名</span><b id="relayName">-</b></div>
+          <div class="kv"><span>中继</span><b id="relayHub">-</b></div>
+          <div class="row" style="margin-top:12px">
+            <button class="ghost" id="btnToggle2">断开中继</button>
+          </div>
+          <p class="hint">「断开中继」= 本机暂时离线，再点一次即可重新接入。控制端（邀请码）在「被控端」页管理。</p>
+        </div>
+
+        <div class="card">
+          <h3>关于</h3>
+          <div class="kv"><span>版本</span><b id="aboutVersion">-</b></div>
+          <div class="kv"><span>中继</span><b id="aboutHub">-</b></div>
+          <div class="kv"><span>设备 ID</span><b id="aboutDevice">-</b></div>
+          <div class="kv"><span>本地密钥</span><b>仅存本机 · 中继无法读取</b></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modalRoot" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-title" id="modalTitle">确认</div>
+      <div class="modal-text" id="modalText"></div>
+      <div class="modal-actions">
+        <button class="ghost" id="modalCancel">取消</button>
+        <button class="primary" id="modalOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toasts"></div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
