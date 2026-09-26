@@ -652,3 +652,60 @@ func TestSelfRegisterEndToEnd(t *testing.T) {
 	_ = agent.UnregisterSelf(hub, fp, false, key2)
 	app.Stop()
 }
+
+// TestRestartReconnect 复现用户场景：「B 关掉再打开，A 拿原来的邀请码根本连不上」。
+// 并且按最坏情况构造：重启期间中继上的设备登记也被删（凭证一起消失）。
+// 期望：B 重开后自动重新登记 + 自动补登记本机凭证，A 用原邀请码自动恢复，无需重新配对。
+func TestRestartReconnect(t *testing.T) {
+	hub := envOr("E2E_HUB", e2eHubAddr)
+	fp := fingerprintOf(t, hub)
+	t.Setenv("OCLINK_CONFIG_DIR", t.TempDir())
+
+	app := NewApp()
+	st0, err := app.SelfRegister(hub, fp)
+	if err != nil {
+		t.Fatalf("自助登记失败: %v", err)
+	}
+	invite, err := app.CreateInvite("e2e-restart")
+	if err != nil {
+		t.Fatalf("生成邀请码失败: %v", err)
+	}
+	prof, _, err := client.DecodeLink(invite)
+	if err != nil {
+		t.Fatalf("邀请码解析失败: %v", err)
+	}
+	pingOK := func(timeout time.Duration) bool {
+		for deadline := time.Now().Add(timeout); time.Now().Before(deadline); {
+			resp, err := client.Request(prof, proto.Request{Op: "ping", ID: "rr"}, 5*time.Second)
+			if err == nil && resp.OK {
+				return true
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		return false
+	}
+	if !pingOK(15 * time.Second) {
+		t.Fatal("首次连接失败")
+	}
+	t.Log("第一次连接成功")
+
+	// ——「关了再打开」：停掉 B；并把中继上的设备登记删掉（最坏情况）——
+	app.Stop()
+	time.Sleep(1500 * time.Millisecond)
+	api := newAdminAPI(t)
+	api.do("POST", "/api/login", map[string]string{"username": "admin", "password": e2ePass}, nil)
+	api.do("POST", "/api/devices/"+st0.DeviceID+"/forget", nil, nil)
+	t.Log("B 已关闭，中继登记已删除")
+
+	// 用同一份配置（同一密钥）重新打开
+	app2 := NewApp()
+	defer app2.Stop()
+	if err := app2.Start(); err != nil {
+		t.Fatalf("重开被控端失败: %v", err)
+	}
+	if !pingOK(90 * time.Second) {
+		t.Fatal("B 重启后 A 用原邀请码一直连不上（问题仍在）")
+	}
+	t.Log("B 重启（登记被删）后：A 用原邀请码自动恢复")
+	_ = app2.Revoke(false)
+}
