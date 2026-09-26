@@ -722,7 +722,11 @@ class Target {
         }
         continue;
       }
-      if (env.type === "pong" || env.type === "ping") continue;
+      if (env.type === "ping") {
+        await conn.writeEnv({ type: "pong" }).catch(() => {});
+        continue;
+      }
+      if (env.type === "pong") continue;
       if (env.type === "error") {
         this.lastError = env.error || "中继返回错误";
         this.manager.pushEvent("error", this.name, this.lastError);

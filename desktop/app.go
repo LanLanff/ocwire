@@ -78,6 +78,16 @@ func (a *App) startup(ctx context.Context) {
 		a.autostart = getAutostart()
 	}
 	a.debugLog("启动: name=%q hub=%q activated=%v", a.cfg.Name, a.cfg.Hub, a.cfg.Key != "")
+	if a.cfg.RecoveredKey {
+		_ = saveConfig(a.cfg)
+		a.debugLog("配置损坏，但密钥已从原文恢复（原文件留档 desktop.json.recovered）")
+		a.act.add(ActivityEntry{Kind: "info", Detail: "本地配置损坏，密钥已自动恢复（原文件已留档）"})
+	}
+	if a.cfg.BrokenIdentity {
+		a.debugLog("配置损坏且密钥无法恢复：本次将登记为全新身份")
+		a.act.add(ActivityEntry{Kind: "error", Detail: "本地配置损坏且密钥无法恢复（原文件已备份为 desktop.json.broken-*）：本机将登记为新身份，之前配对的控制端需要用新邀请码重新添加"})
+		a.emitState()
+	}
 	go a.heartbeatLoop()
 	a.emitState()
 	if a.cfg.Key != "" {

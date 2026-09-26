@@ -2,6 +2,7 @@ package hub
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -116,6 +117,15 @@ func (t *Tunnel) Serve(conn net.Conn) {
 		}
 	}()
 	defer conn.Close()
+	// TCP 层保活：对端断网/睡眠导致连接半死时，约 1 分钟内由内核探测断开
+	if tc, ok := conn.(*tls.Conn); ok {
+		if nc := tc.NetConn(); nc != nil {
+			if tcp, ok := nc.(*net.TCPConn); ok {
+				_ = tcp.SetKeepAlive(true)
+				_ = tcp.SetKeepAliveConfig(net.KeepAliveConfig{Enable: true, Idle: 30 * time.Second, Interval: 10 * time.Second, Count: 3})
+			}
+		}
+	}
 	_ = conn.SetDeadline(time.Now().Add(handshakeTimeout))
 
 	first, err := readEnvelope(conn)
@@ -176,7 +186,10 @@ func (t *Tunnel) Serve(conn net.Conn) {
 				continue
 			}
 			if err := peer.send(env); err != nil {
-				log.Printf("转发失败: %v", err)
+				// 对端连接已死：立即摘掉它，并给发送方明确答复（别让 A 干等到超时）
+				log.Printf("转发失败，摘除对端 %s（%s）: %v", peer.dev.Name, peer.role, err)
+				_ = peer.conn.Close()
+				_ = ep.send(proto.Envelope{Type: "error", Error: "对端不在线"})
 			}
 		case "ctrl":
 			// 仅被控端（agent）可发控制指令：断开控制端 / 自删设备条目

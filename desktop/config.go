@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
+	"time"
+
+	"oclink/internal/proto"
 )
 
 // ClientRec 是本机授权的控制端凭证（B 端本地表：只存 id/标签/时间/是否禁用）。
@@ -27,6 +32,10 @@ type Config struct {
 	ReadOnly    bool        `json:"readonly,omitempty"`
 	Root        string      `json:"root,omitempty"`
 	Autostart   bool        `json:"autostart,omitempty"`
+
+	// 以下仅在内存中使用，标识配置文件异常（不参与序列化）
+	BrokenIdentity bool `json:"-"` // 配置损坏且密钥无法恢复：本次将登记为全新身份
+	RecoveredKey   bool `json:"-"` // 配置损坏但密钥已从原文抢救回来
 }
 
 func configDir() string {
@@ -52,11 +61,48 @@ func exeDirFile(name string) string {
 	return filepath.Join(filepath.Dir(exe), name)
 }
 
+// 从损坏的 JSON 原文里抢救关键字段（正则；只用于恢复身份，不用于正常读取）
+var (
+	reKeyField = regexp.MustCompile(`"key"\s*:\s*"([^"]+)"`)
+	reHubField = regexp.MustCompile(`"hub"\s*:\s*"([^"]+)"`)
+	reFpField  = regexp.MustCompile(`"fingerprint"\s*:\s*"([^"]+)"`)
+)
+
+func rescueField(re *regexp.Regexp, raw []byte) string {
+	m := re.FindSubmatch(raw)
+	if len(m) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(string(m[1]))
+}
+
 // loadConfig 读取桌面配置；没有则尝试从 agent.json（配置目录 → exe 同目录）导入。
+// 配置损坏时先尝试抢救密钥——绝不能静默换掉设备身份（否则已配对的控制端将永久连不上）。
 func loadConfig() Config {
 	var c Config
 	if raw, err := os.ReadFile(desktopConfigPath()); err == nil {
-		_ = json.Unmarshal(raw, &c)
+		parseErr := json.Unmarshal(raw, &c)
+		if parseErr != nil || strings.TrimSpace(c.Key) == "" {
+			if k := rescueField(reKeyField, raw); k != "" {
+				if _, perr := proto.ParsePairingKey(k); perr == nil {
+					c.Key = k
+					if c.Hub == "" {
+						c.Hub = rescueField(reHubField, raw)
+					}
+					if c.Fingerprint == "" {
+						c.Fingerprint = rescueField(reFpField, raw)
+					}
+					c.RecoveredKey = true
+					_ = os.WriteFile(desktopConfigPath()+".recovered", raw, 0o600)
+				}
+			}
+			if strings.TrimSpace(c.Key) == "" {
+				// 密钥真的救不回来了：备份坏文件并标记；本次会登记为新身份（前端/日志会明确提示）
+				bak := desktopConfigPath() + ".broken-" + time.Now().Format("20060102-150405")
+				_ = os.WriteFile(bak, raw, 0o600)
+				c.BrokenIdentity = true
+			}
+		}
 	}
 	if c.Key == "" {
 		for _, p := range []string{agentConfigPath(), exeDirFile("agent.json")} {

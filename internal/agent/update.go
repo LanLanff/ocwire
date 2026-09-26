@@ -22,7 +22,7 @@ import (
 )
 
 // AgentVersion 是 agent 自身版本（与协议版本 proto.Version 独立）。
-const AgentVersion = "0.2.4"
+const AgentVersion = "0.2.5"
 
 // updatePublicKeyB64 是发布签名公钥（Ed25519, base64）。由 relsign -gen 生成后填入。
 const updatePublicKeyB64 = "vHX9hUuCe4LdCHr+giwpqI+lNltrcHYpILRgDZJmoCs="

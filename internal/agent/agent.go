@@ -269,6 +269,35 @@ func (a *Agent) connectOnce() error {
 }
 
 func (a *Agent) loop(conn net.Conn) error {
+	stop := make(chan struct{})
+	defer close(stop)
+	// 保活：每 25 秒 ping 一次中继；15 秒内没有 pong 就判定链路已死、断开重连。
+	// （PC 睡眠/断网/进程僵死时中继不会立刻察觉；有了保活，最长约 40 秒就能恢复真实状态）
+	pongCh := make(chan struct{}, 1)
+	go func() {
+		t := time.NewTicker(25 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case <-t.C:
+				if err := a.write(conn, proto.Envelope{Type: "ping"}); err != nil {
+					_ = conn.Close()
+					return
+				}
+				select {
+				case <-pongCh:
+				case <-time.After(15 * time.Second):
+					log.Printf("心跳超时（15 秒未收到 pong），主动断开重连")
+					_ = conn.Close()
+					return
+				case <-stop:
+					return
+				}
+			}
+		}
+	}()
 	for {
 		env, err := readEnvelope(conn)
 		if err != nil {
@@ -308,8 +337,15 @@ func (a *Agent) loop(conn net.Conn) error {
 				a.disabled = true
 				a.emit(Event{Type: "disabled", Error: env.Error})
 			}
+		case "ping":
+			// 中继保活探测：立即回 pong
+			_ = a.write(conn, proto.Envelope{Type: "pong"})
 		case "pong":
 			// 心跳应答
+			select {
+			case pongCh <- struct{}{}:
+			default:
+			}
 		}
 	}
 }
